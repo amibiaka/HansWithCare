@@ -1,0 +1,4 @@
+node_modules/
+tools/*.png
+package-lock.json
+_to_delete_*

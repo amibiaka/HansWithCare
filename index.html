@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#E36D9F">
+<meta name="description" content="Dehna, by Han's With Care: verified emergency numbers, health workers, pharmacies, Han's products and wellbeing services across Ethiopia.">
+<title>Dehna</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<a class="skip" href="#main" data-i18n="skip">Skip to content</a>
+<header class="topbar" id="topbar">
+  <button class="iconbtn" id="btnBack" aria-label="Back" hidden>&#8592;</button>
+  <a class="brand" href="#/" aria-label="Dehna home"><span class="wordmark">Dehna</span><span class="byline"><small>by</small><img src="assets/logo.png" alt="Han's With Care" height="22"></span></a>
+  <div class="grow"></div>
+  <span class="netdot" id="netdot" role="status" aria-live="polite"></span>
+  <button class="langbtn" id="btnLang" aria-label="Change language">EN</button>
+</header>
+
+<main id="main" class="main" tabindex="-1"></main>
+
+<button class="sos" id="btnSOS" aria-label="Emergency help">
+  <span class="sos-ic" aria-hidden="true">!</span><span class="sos-txt" data-i18n="emergency">Emergency</span>
+</button>
+
+<nav class="bottomnav" id="bottomnav" aria-label="Main">
+  <a href="#/" data-nav="home"><span aria-hidden="true">&#8962;</span><small data-i18n="nav_home">Home</small></a>
+  <a href="#/find" data-nav="find"><span aria-hidden="true">&#128269;</span><small data-i18n="nav_find">Find</small></a>
+  <a href="#/cases" data-nav="cases"><span aria-hidden="true">&#128203;</span><small data-i18n="nav_cases">My requests</small></a>
+  <a href="#/guide" data-nav="guide"><span aria-hidden="true">&#128172;</span><small data-i18n="nav_guide">Guide</small></a>
+  <a href="#/menu" data-nav="menu"><span aria-hidden="true">&#9776;</span><small data-i18n="nav_menu">Menu</small></a>
+</nav>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+<div id="modal" class="modal" hidden></div>
+
+<script src="config.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/seed.js"></script>
+<script src="js/store.js"></script>
+<script src="js/geo.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/guide.js"></script>
+<script src="js/patient.js"></script>
+<script src="js/pro.js"></script>
+<script src="js/admin.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

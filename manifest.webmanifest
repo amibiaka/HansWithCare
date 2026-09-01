@@ -1,0 +1,23 @@
+{
+  "name": "Dehna, by Han's With Care",
+  "short_name": "Dehna",
+  "description": "Dehna, by Han's With Care. Verified emergency numbers, health workers, pharmacies, Han's With Care products and wellbeing services across Ethiopia.",
+  "start_url": "./index.html#/",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFFFFF",
+  "theme_color": "#E36D9F",
+  "lang": "en",
+  "categories": ["health", "medical"],
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "assets/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Emergency", "url": "./index.html#/emergency", "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Find a health worker", "url": "./index.html#/find?type=practitioner" },
+    { "name": "Find a pharmacy", "url": "./index.html#/find?type=pharmacy" }
+  ]
+}

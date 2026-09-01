@@ -1,0 +1,8 @@
+{
+  "name": "hans-with-care-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Han's With Care health access platform, demonstration PWA",
+  "scripts": { "start": "npx serve .", "test": "node tools/smoke.js" },
+  "devDependencies": { "playwright": "^1.40.0" }
+}
