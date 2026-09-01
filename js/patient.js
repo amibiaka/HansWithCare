@@ -41,11 +41,14 @@ const PATIENT = (() => {
     UI.render('<h1>' + esc(t('home_title')) + '</h1><p class="muted">' + esc(t('home_sub')) + '</p>' +
       '<div class="tiles">' +
       '<a class="tile em" href="#/emergency"><span class="ic" aria-hidden="true">🚨</span><span>' + esc(t('t_emergency')) + '</span></a>' +
+      '<div class="col"><div class="colhead">' + esc(t('home_col_care')) + '</div>' +
       '<a class="tile" href="#/find?type=practitioner"><span class="ic" aria-hidden="true">🩺</span><span>' + esc(t('t_practitioner')) + '</span></a>' +
       (DB.flag('pharmacy') ? '<a class="tile" href="#/find?type=pharmacy"><span class="ic" aria-hidden="true">💊</span><span>' + esc(t('t_pharmacy')) + '</span></a><a class="tile" href="#/rx"><span class="ic" aria-hidden="true">📄</span><span>' + esc(t('t_prescription')) + '</span></a>' : '') +
-      (DB.flag('products') ? '<a class="tile hans" href="#/products"><span class="ic" aria-hidden="true">🌸</span><span>' + esc(t('t_products')) + '</span></a>' : '') +
+      '</div><div class="col"><div class="colhead">' + esc(t('home_col_shop')) + '</div>' +
+      (DB.flag('products') ? '<a class="tile hans" href="#/products"><span class="ic" aria-hidden="true">🌸</span><span>' + esc(t('t_products')) + '</span></a><a class="tile hans" href="#/products?cat=menstrual"><span class="ic" aria-hidden="true">🩸</span><span>' + esc(t('t_pads')) + '</span></a>' : '') +
       (DB.flag('wellbeing') ? '<a class="tile" href="#/find?type=wellbeing"><span class="ic" aria-hidden="true">🧘</span><span>' + esc(t('t_wellbeing')) + '</span></a>' : '') +
-      (DB.flag('voice') ? '<a class="tile" href="#/voice"><span class="ic" aria-hidden="true">🎙</span><span>' + esc(t('t_voice')) + '</span></a>' : '') +
+      '</div>' +
+      (DB.flag('voice') ? '<a class="tile voice" href="#/voice"><span class="ic" aria-hidden="true">🎙</span><span>' + esc(t('t_voice')) + '</span></a>' : '') +
       '</div>' +
       '<div class="alert pink small">' + esc(t('home_verified_note')) + '</div>' +
       (s ? '' : '<div class="card" style="border-color:var(--pink)"><h2 style="margin-top:0">🩺 ' + esc(t('home_pro_title')) + '</h2><p class="small">' + esc(t('home_pro_sub')) + '</p><div class="row"><a class="btn primary" href="#/register">' + esc(t('register')) + '</a><a class="btn ghost" href="#/pro/signin">' + esc(t('pro_signin')) + '</a></div></div>') +
@@ -265,8 +268,8 @@ const PATIENT = (() => {
   function products() {
     const q = UI.qs();
     if (q.id) return productDetail(q.id);
-    const ps = DB.all('hansProducts');
-    UI.render('<h1>' + esc(t('prod_title')) + '</h1><p class="muted">' + esc(t('prod_sub')) + '</p>' + (cart.length ? '<a class="btn primary block" href="#/cart">🧺 ' + esc(t('cart')) + ' (' + cart.reduce((s, x) => s + x.qty, 0) + ')</a>' : '') + '<div class="card">' + ps.map(p => '<div class="item"><div class="avatar" aria-hidden="true">🌸</div><div class="body"><div class="row between"><span class="title">' + esc(p.name) + '</span>' + UI.stockBadge(p.stock) + '</div><div class="meta">' + esc(t('category')) + ': ' + esc(p.category) + ' · ' + p.variants.map(v => esc(v.label) + ' ' + v.price + ' ETB').join(' · ') + '</div><div class="row" style="margin-top:6px"><a class="btn small ghost" href="#/products?id=' + p.id + '">' + esc(t('view')) + '</a></div></div></div>').join('') + '</div>', { title: t('prod_title') });
+    const ps = DB.all('hansProducts').filter(p => !q.cat || p.category === q.cat);
+    UI.render('<h1>' + esc(q.cat === 'menstrual' ? t('t_pads') : t('prod_title')) + '</h1>' + (q.cat ? '<p><a href="#/products">' + esc(t('prod_title')) + ' →</a></p>' : '') + '<p class="muted">' + esc(t('prod_sub')) + '</p>' + (cart.length ? '<a class="btn primary block" href="#/cart">🧺 ' + esc(t('cart')) + ' (' + cart.reduce((s, x) => s + x.qty, 0) + ')</a>' : '') + '<div class="card">' + ps.map(p => '<div class="item"><div class="avatar" aria-hidden="true">🌸</div><div class="body"><div class="row between"><span class="title">' + esc(p.name) + '</span>' + UI.stockBadge(p.stock) + '</div><div class="meta">' + esc(t('category')) + ': ' + esc(p.category) + ' · ' + p.variants.map(v => esc(v.label) + ' ' + v.price + ' ETB').join(' · ') + '</div><div class="row" style="margin-top:6px"><a class="btn small ghost" href="#/products?id=' + p.id + '">' + esc(t('view')) + '</a></div></div></div>').join('') + '</div>', { title: t('prod_title') });
   }
   function productDetail(id) {
     const p = DB.get('hansProducts', id); if (!p) return UI.go('#/products');

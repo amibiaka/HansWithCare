@@ -59,6 +59,11 @@ img{max-width:100%}
 .tile.em{grid-column:1/-1;background:var(--red);color:#fff;border-color:var(--red);flex-direction:row;align-items:center;min-height:76px;font-size:1.2rem}
 .tile.em .ic{font-size:2.2rem}
 .tile.hans{border-color:var(--pink);background:var(--pink-soft)}
+.tiles .col{display:flex;flex-direction:column;gap:12px}
+.tiles .col .tile{min-height:104px}
+.colhead{font-size:.78rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:2px 4px 0;min-height:2.4em;display:flex;align-items:flex-end}
+.tile.voice{grid-column:1/-1;flex-direction:row;align-items:center;min-height:72px;border-color:var(--ink);background:var(--bg)}
+.tile.voice .ic{font-size:1.8rem}
 
 /* buttons */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:var(--tap);padding:10px 16px;border-radius:12px;border:2px solid var(--ink);background:var(--ink);color:#fff;font-weight:700;text-decoration:none;text-align:center}
