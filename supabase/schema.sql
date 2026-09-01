@@ -49,7 +49,7 @@ end $$;
 
 create or replace function public.hwc_keys() returns trigger language plpgsql as $$
 begin
-  new.updated_at := coalesce((new.doc->>'updatedAt')::timestamptz, now());
+  new.updated_at := now();  -- server clock is authoritative; clients merge by server time
   new.device := new.doc->>'device';
   new.recipient := new.doc->'recipient'->>'id';
   new.recipients := case when jsonb_typeof(new.doc->'recipients') = 'array' then array(select jsonb_array_elements_text(new.doc->'recipients')) else null end;

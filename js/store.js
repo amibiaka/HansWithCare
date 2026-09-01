@@ -63,9 +63,21 @@ const DB = (() => {
     async insertProfile(p) { const r = await fetch(this.url + '/rest/v1/profiles', { method: 'POST', headers: await this.headers({ Prefer: 'return=minimal' }), body: JSON.stringify(p) }); if (!r.ok) { const txt = await r.text(); throw new Error('profile ' + r.status + ' ' + txt.slice(0, 160)); } },
     async signOut() { try { await fetch(this.url + '/auth/v1/logout', { method: 'POST', headers: await this.headers() }); } catch (e) {} this.auth = null; this.saveAuth(); },
     async get(table, query) { const out = []; let from = 0; for (;;) { const r = await fetch(this.url + '/rest/v1/' + table + '?' + (query || 'select=*'), { headers: await this.headers({ Range: from + '-' + (from + 999), 'Range-Unit': 'items' }) }); if (!r.ok) throw new Error(table + ' ' + r.status); const j = await r.json(); out.push.apply(out, j); if (j.length < 1000) break; from += 1000; } return out; },
-    async upsert(table, rows) { const r = await fetch(this.url + '/rest/v1/' + table + '?on_conflict=id', { method: 'POST', headers: await this.headers({ Prefer: (table === 'audit' ? 'resolution=ignore-duplicates' : 'resolution=merge-duplicates') + ',return=minimal' }), body: JSON.stringify(rows) }); if (!r.ok) { const txt = await r.text(); const e = new Error(table + ' ' + r.status + ' ' + txt.slice(0, 200)); e.status = r.status; throw e; } },
+    // Update-then-insert instead of ON CONFLICT upserts: PostgREST upserts run the INSERT policy even for existing
+    // rows, which would block a doctor updating a patient's case. PATCH goes through the UPDATE policies only.
+    async upsert(table, rows) {
+      for (const row of rows) {
+        const body = JSON.stringify(row);
+        const r = await fetch(this.url + '/rest/v1/' + table + '?id=eq.' + encodeURIComponent(row.id), { method: 'PATCH', headers: await this.headers({ Prefer: 'return=representation' }), body: JSON.stringify({ doc: row.doc, updated_at: row.updated_at }) });
+        if (r.ok) { let j = []; try { j = await r.json(); } catch (e) {} if (j.length) continue; }
+        else if (r.status !== 404) { const txt = await r.text(); const e = new Error(table + ' ' + r.status + ' ' + txt.slice(0, 200)); e.status = r.status; throw e; }
+        const r2 = await fetch(this.url + '/rest/v1/' + table, { method: 'POST', headers: await this.headers({ Prefer: 'return=minimal' }), body });
+        if (!r2.ok) { const txt = await r2.text(); const e = new Error(table + ' ' + r2.status + ' ' + txt.slice(0, 200)); e.status = r2.status === 409 ? 403 : r2.status; throw e; }
+      }
+    },
     async del(table, id) { const r = await fetch(this.url + '/rest/v1/' + table + '?id=eq.' + encodeURIComponent(id), { method: 'DELETE', headers: await this.headers() }); if (!r.ok && r.status !== 404) throw new Error(table + ' delete ' + r.status); },
-    async upload(path, blob) { const r = await fetch(this.url + '/storage/v1/object/attachments/' + path, { method: 'POST', headers: await this.headers({ 'Content-Type': blob.type || 'application/octet-stream', 'x-upsert': 'true' }), body: blob }); if (!r.ok) throw new Error('upload ' + r.status); },
+    // No x-upsert: object names are unique ids, and upsert would require an UPDATE policy on storage.objects.
+    async upload(path, blob) { const r = await fetch(this.url + '/storage/v1/object/attachments/' + path, { method: 'POST', headers: await this.headers({ 'Content-Type': blob.type || 'application/octet-stream' }), body: blob }); if (!r.ok) throw new Error('upload ' + r.status + ' ' + (await r.text()).slice(0, 120)); },
     async download(path) { const r = await fetch(this.url + '/storage/v1/object/authenticated/attachments/' + path, { headers: await this.headers() }); if (!r.ok) throw new Error('download ' + r.status); return r.blob(); },
     row(c, obj) { if (obj.__settings) return { id: obj.id, doc: obj.doc, updated_at: nowIso() }; return { id: obj.id, doc: obj, updated_at: obj.updatedAt || nowIso() }; },
     // Outbox: pending writes survive reloads and offline periods; flushed in order, idempotent upserts.
@@ -94,7 +106,8 @@ const DB = (() => {
         if (!rows.length) return 0;
         let changed = 0; const local = all(c); const idx = {}; local.forEach((x, i) => idx[x.id] = i);
         const pending = new Set(this.outbox().filter(x => x.c === c).map(x => x.id));
-        rows.forEach(r => { const d = r.doc; d.updatedAt = r.updated_at; const i = idx[r.id]; if (pending.has(r.id)) return; if (i === undefined) { local.push(d); idx[r.id] = local.length - 1; changed++; } else if ((local[i].updatedAt || '') < r.updated_at) { local[i] = d; changed++; } });
+        // Server rows are authoritative unless a local change is still waiting in the outbox.
+        rows.forEach(r => { const d = r.doc; d.updatedAt = r.updated_at; const i = idx[r.id]; if (pending.has(r.id)) return; if (i === undefined) { local.push(d); idx[r.id] = local.length - 1; changed++; } else if (JSON.stringify(local[i]) !== JSON.stringify(d)) { local[i] = d; changed++; } });
         this.lastSync[table] = rows[rows.length - 1].updated_at;
         Local.save(c, local);
         return changed;
@@ -174,7 +187,7 @@ const DB = (() => {
     if (Remote.enabled) {
       const user = await Remote.signUp(o.email, o.password);
       o.record.ownerUid = user.id;
-      if (o.doc) { const fid = newId('AT'); const path = 'verification/' + o.record.id + '/' + fid; await Remote.upload(path, o.doc.blob); o.record.verification.documentPath = path; try { await idb.put(fid, o.doc.blob, { kind: 'licence' }); } catch (e) {} }
+      if (o.doc) { const fid = newId('AT'); const path = 'verification/' + o.record.id + '/' + fid; try { await idb.put(fid, o.doc.blob, { kind: 'licence' }); } catch (e) {} try { await Remote.upload(path, o.doc.blob); o.record.verification.documentPath = path; } catch (e) { console.warn('licence upload failed', e.message); o.record.verification.documentId = fid; o.record.verification.evidence += '; document upload failed, to be re-requested'; } }
       o.record.updatedAt = nowIso();
       await Remote.upsert(Remote.table(o.col), [Remote.row(o.col, o.record)]);
       await Remote.insertProfile({ user_id: user.id, role: o.role, name: o.name, linked: o.record.id });
