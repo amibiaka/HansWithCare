@@ -78,20 +78,22 @@ const DB = (() => {
       } finally { this.flushing = false; }
     },
     async pull(cols) {
-      let changed = 0;
-      for (const c of cols) {
+      // Tables are pulled concurrently; each merges by updated_at and skips rows that still sit in the outbox.
+      const one = async c => {
+        if (c === 'profiles') { if (!this.auth) return 0; try { const rows = await this.get('profiles', 'select=*'); cache.profiles = rows.map(r => Object.assign({ id: r.user_id, updatedAt: r.created_at }, r)); Local.save('profiles', cache.profiles); } catch (e) {} return 0; }
         const table = this.table(c); const since = this.lastSync[table];
-        if (c === 'profiles') { if (!this.auth) continue; try { const rows = await this.get('profiles', 'select=*'); cache.profiles = rows.map(r => Object.assign({ id: r.user_id, updatedAt: r.created_at }, r)); Local.save('profiles', cache.profiles); } catch (e) {} continue; }
-        let q = 'select=id,doc,updated_at&order=updated_at.asc' + (since ? '&updated_at=gt.' + encodeURIComponent(since) : '');
-        let rows; try { rows = await this.get(table, q); } catch (e) { console.warn('pull', table, e.message); continue; }
-        if (!rows.length) continue;
-        const local = all(c); const idx = {}; local.forEach((x, i) => idx[x.id] = i);
+        const q = 'select=id,doc,updated_at&order=updated_at.asc' + (since ? '&updated_at=gt.' + encodeURIComponent(since) : '');
+        let rows; try { rows = await this.get(table, q); } catch (e) { console.warn('pull', table, e.message); return 0; }
+        if (!rows.length) return 0;
+        let changed = 0; const local = all(c); const idx = {}; local.forEach((x, i) => idx[x.id] = i);
         const pending = new Set(this.outbox().filter(x => x.c === c).map(x => x.id));
         rows.forEach(r => { const d = r.doc; d.updatedAt = r.updated_at; const i = idx[r.id]; if (pending.has(r.id)) return; if (i === undefined) { local.push(d); idx[r.id] = local.length - 1; changed++; } else if ((local[i].updatedAt || '') < r.updated_at) { local[i] = d; changed++; } });
         this.lastSync[table] = rows[rows.length - 1].updated_at;
         Local.save(c, local);
-      }
-      return changed;
+        return changed;
+      };
+      const counts = await Promise.all(cols.map(one));
+      return counts.reduce((a, b) => a + b, 0);
     },
     async pullSettings() { try { const rows = await this.get('settings', 'select=id,doc,updated_at'); rows.forEach(r => { if (r.id === 'flags' || r.id === 'fees') { cache[r.id] = r.doc; Local.save(r.id, r.doc); } }); } catch (e) {} }
   };
