@@ -10,12 +10,21 @@ const GEO = (() => {
   function isWithin(id, ancestorId) { if (!id) return false; if (id === ancestorId) return true; return ancestors(id).some(a => a.id === ancestorId); }
   function km(a, b) { if (!a || !b || a.lat == null || b.lat == null) return null; const R = 6371, dLat = (b.lat - a.lat) * Math.PI / 180, dLng = (b.lng - a.lng) * Math.PI / 180; const x = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) * Math.sin(dLng / 2) ** 2; return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x)); }
   function nearestUnit(pt, minLevel) { let best = null, bd = 1e9; DB.all('geo').forEach(u => { if (u.level < (minLevel || 3) || u.lat == null) return; const d = km(pt, u); if (d !== null && d < bd) { bd = d; best = u; } }); return best ? { unit: best, km: bd } : null; }
+  // Geolocation with a permission pre-check, a two-stage attempt (fast, then high accuracy) and error mapping.
+  // Errors carry .code: 1 denied, 2 unavailable, 3 timeout, 0 unsupported.
   function gps(opts) {
-    return new Promise((res, rej) => {
-      if (!navigator.geolocation) return rej(new Error('nogeo'));
-      navigator.geolocation.getCurrentPosition(p => res({ lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy }), e => rej(e), Object.assign({ enableHighAccuracy: false, timeout: 12000, maximumAge: 60000 }, opts || {}));
+    const attempt = o => new Promise((res, rej) => navigator.geolocation.getCurrentPosition(p => res({ lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy }), e => rej(e), o));
+    return new Promise(async (res, rej) => {
+      if (!navigator.geolocation) return rej({ code: 0, message: 'unsupported' });
+      try { if (navigator.permissions && navigator.permissions.query) { const st = await navigator.permissions.query({ name: 'geolocation' }); if (st.state === 'denied') return rej({ code: 1, message: 'denied' }); } } catch (e) {}
+      try { return res(await attempt(Object.assign({ enableHighAccuracy: false, timeout: 20000, maximumAge: 120000 }, opts || {}))); }
+      catch (e1) {
+        if (e1 && e1.code === 1) return rej(e1);
+        try { return res(await attempt({ enableHighAccuracy: true, timeout: 25000, maximumAge: 0 })); } catch (e2) { return rej(e2); }
+      }
     });
   }
+  function gpsError(e) { const c = e && e.code; return c === 1 ? t('gps_denied') : c === 2 ? t('gps_unavailable') : c === 3 ? t('gps_timeout') : t('em_no_gps'); }
   function summary(loc, lang) {
     // Plain-language location summary that can be copied or sent (ToR §6 emergency access)
     const parts = [];
@@ -48,5 +57,5 @@ const GEO = (() => {
     });
   }
   function removePack(region) { setPacks(packs().filter(x => x !== region)); if (navigator.serviceWorker && navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage({ type: 'DROP_PACK', url: packUrl(region) }); }
-  return { LEVEL_NAMES, unit, children, ancestors, regionOf, label, path, isWithin, km, nearestUnit, gps, summary, saved, save, packs, downloadPack, removePack };
+  return { LEVEL_NAMES, unit, children, ancestors, regionOf, label, path, isWithin, km, nearestUnit, gps, gpsError, summary, saved, save, packs, downloadPack, removePack };
 })();
