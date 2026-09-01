@@ -5,11 +5,11 @@
    - Never cache clinical content, prescriptions or case data (those live in the
      encrypted queue inside the app, not in the HTTP cache).
    - Navigation falls back to the cached shell when offline. */
-const VERSION = 'dehna-v1.1.0';
+const VERSION = 'dehna-v1.2.0';
 const SHELL = [
   './', './index.html', './manifest.webmanifest', './config.js', './css/app.css',
   './js/i18n.js', './js/seed.js', './js/store.js', './js/geo.js', './js/ui.js',
-  './js/guide.js', './js/patient.js', './js/pro.js', './js/admin.js', './js/app.js',
+  './js/guide.js', './js/patient.js', './js/pro.js', './js/register.js', './js/admin.js', './js/app.js',
   './assets/logo.png', './assets/icon-192.png', './assets/icon-512.png'
 ];
 const PACKS = VERSION + '-packs';

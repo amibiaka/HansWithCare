@@ -54,6 +54,13 @@ const DB = (() => {
       const p = await this.get('profiles', 'user_id=eq.' + j.user.id); if (!p.length) { this.auth = null; this.saveAuth(); throw new Error('No profile for this account. Ask an administrator to assign a role.'); }
       return { id: j.user.id, role: p[0].role, name: p[0].name, linked: p[0].linked || null, email };
     },
+    async signUp(email, password) {
+      const r = await fetch(this.url + '/auth/v1/signup', { method: 'POST', headers: { apikey: this.key, 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+      const j = await r.json(); if (!r.ok) throw new Error(j.error_description || j.msg || j.message || 'signup');
+      if (!j.access_token) throw new Error('Email confirmation is required before sign-in. Check your inbox.');
+      this.auth = { access_token: j.access_token, refresh_token: j.refresh_token, expires_at: j.expires_at, user: j.user }; this.saveAuth(); return j.user;
+    },
+    async insertProfile(p) { const r = await fetch(this.url + '/rest/v1/profiles', { method: 'POST', headers: await this.headers({ Prefer: 'return=minimal' }), body: JSON.stringify(p) }); if (!r.ok) { const txt = await r.text(); throw new Error('profile ' + r.status + ' ' + txt.slice(0, 160)); } },
     async signOut() { try { await fetch(this.url + '/auth/v1/logout', { method: 'POST', headers: await this.headers() }); } catch (e) {} this.auth = null; this.saveAuth(); },
     async get(table, query) { const out = []; let from = 0; for (;;) { const r = await fetch(this.url + '/rest/v1/' + table + '?' + (query || 'select=*'), { headers: await this.headers({ Range: from + '-' + (from + 999), 'Range-Unit': 'items' }) }); if (!r.ok) throw new Error(table + ' ' + r.status); const j = await r.json(); out.push.apply(out, j); if (j.length < 1000) break; from += 1000; } return out; },
     async upsert(table, rows) { const r = await fetch(this.url + '/rest/v1/' + table + '?on_conflict=id', { method: 'POST', headers: await this.headers({ Prefer: (table === 'audit' ? 'resolution=ignore-duplicates' : 'resolution=merge-duplicates') + ',return=minimal' }), body: JSON.stringify(rows) }); if (!r.ok) { const txt = await r.text(); const e = new Error(table + ' ' + r.status + ' ' + txt.slice(0, 200)); e.status = r.status; throw e; } },
@@ -162,6 +169,25 @@ const DB = (() => {
   function login(user) { session = { id: user.id, role: user.role, name: user.name, linked: user.linked || null, email: user.email || null, at: nowIso() }; try { sessionStorage.setItem('hwc.session', JSON.stringify(session)); } catch (e) {} audit('login', user.id); emit('change'); }
   async function loginRemote(email, password) { const u = await Remote.signIn(email, password); login(u); Remote.lastSync = {}; sync(); return u; }
   function logout() { if (session) audit('logout', session.id); session = null; try { sessionStorage.removeItem('hwc.session'); } catch (e) {} if (Remote.enabled) { Remote.signOut(); ['cases','orders','notifications','consents','complaints','approvals','audit','guideLog','profiles'].forEach(c => { cache[c] = all(c).filter(x => x.device === deviceToken()); Local.save(c, cache[c]); }); Remote.lastSync = {}; } emit('change'); }
+  // Self-registration of a professional or partner: account + pending record + profile, then signed in.
+  async function register(o) {
+    if (Remote.enabled) {
+      const user = await Remote.signUp(o.email, o.password);
+      o.record.ownerUid = user.id;
+      if (o.doc) { const fid = newId('AT'); const path = 'verification/' + o.record.id + '/' + fid; await Remote.upload(path, o.doc.blob); o.record.verification.documentPath = path; try { await idb.put(fid, o.doc.blob, { kind: 'licence' }); } catch (e) {} }
+      o.record.updatedAt = nowIso();
+      await Remote.upsert(Remote.table(o.col), [Remote.row(o.col, o.record)]);
+      await Remote.insertProfile({ user_id: user.id, role: o.role, name: o.name, linked: o.record.id });
+      const arr = all(o.col); arr.push(o.record); Local.save(o.col, arr);
+      login({ id: user.id, role: o.role, name: o.name, linked: o.record.id, email: o.email });
+      Remote.lastSync = {}; sync();
+    } else {
+      if (o.doc) { const fid = newId('AT'); await idb.put(fid, o.doc.blob, { kind: 'licence' }); o.record.verification.documentId = fid; }
+      put(o.col, o.record);
+      const u = { id: newId('U'), role: o.role, name: o.name, linked: o.record.id, email: o.email }; put('users', u); login(u);
+    }
+    emit('change');
+  }
   function getSession() { return session; }
   function flag(k) { const f = all('flags'); return f[k] !== false; }
   function setFlag(k, v) { const f = Object.assign({}, all('flags')); f[k] = v; setObj('flags', f); audit('flag', k, { result: String(v) }); }
@@ -172,5 +198,5 @@ const DB = (() => {
   function parseCSV(text) { const rows = []; let row = [], cell = '', q = false; for (let i = 0; i < text.length; i++) { const ch = text[i]; if (q) { if (ch === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += ch; } else if (ch === '"') q = true; else if (ch === ',') { row.push(cell); cell = ''; } else if (ch === '\n' || ch === '\r') { if (ch === '\r' && text[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; } else cell += ch; } if (cell || row.length) { row.push(cell); rows.push(row); } if (!rows.length) return []; const head = rows[0]; return rows.slice(1).filter(r => r.some(x => x !== '')).map(r => { const o = {}; head.forEach((h, i) => o[h] = r[i] !== undefined ? r[i] : ''); return o; }); }
   function reset() { Local.clear(); idb.clear(); try { sessionStorage.removeItem('hwc.session'); localStorage.removeItem('hwc.outbox'); localStorage.removeItem('hwc.lastSync'); } catch (e) {} location.reload(); }
 
-  return { init, sync, all, get, put, remove, setObj, newId, nowIso, audit, login, loginRemote, logout, session: getSession, flag, setFlag, deviceToken, notify, exportJSON, toCSV, parseCSV, reset, files: idb, on: fn => listeners.push(fn), clone, hash, remote: Remote };
+  return { init, sync, all, get, put, remove, setObj, newId, nowIso, audit, login, loginRemote, register, logout, session: getSession, flag, setFlag, deviceToken, notify, exportJSON, toCSV, parseCSV, reset, files: idb, on: fn => listeners.push(fn), clone, hash, remote: Remote };
 })();

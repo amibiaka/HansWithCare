@@ -26,6 +26,7 @@ const APP = (() => {
     [/^\/rights$/, () => PATIENT.rights()],
     [/^\/complaint$/, () => PATIENT.complaint()],
     [/^\/pro\/signin$/, () => PRO.signin()],
+    [/^\/register$/, () => REG.view()],
     [/^\/pro$/, () => PRO.dashboard()],
     [/^\/pro\/case\/([\w-]+)$/, m => PRO.proCase(m[1])],
     [/^\/pro\/order\/([\w-]+)$/, m => PRO.proOrder(m[1])],
@@ -34,6 +35,7 @@ const APP = (() => {
   function route() {
     const hash = location.hash.replace(/^#/, '') || '/';
     const path = hash.split('?')[0];
+    UI.closeModal();
     if (!getLang() && path !== '/lang') { PATIENT.langChooser(); return; }
     for (const r of ROUTES) { const m = path.match(r[0]); if (m) { try { r[1](m); } catch (e) { console.error(e); UI.render('<div class="alert red">Error: ' + esc(e.message) + '</div><a class="btn" href="#/">' + esc(t('nav_home')) + '</a>'); } nav(path); return; } }
     UI.go('#/');

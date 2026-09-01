@@ -40,6 +40,18 @@ Cloud demo accounts (project `dehna`, organisation `hans-with-care`): `dr.selam@
 `wb.mimi@dehna.demo`, `admin1@dehna.demo`, `admin2@dehna.demo`, `safety@dehna.demo`, `privacy@dehna.demo`.
 Passwords are held by Han's With Care and must be rotated before any real use.
 
+## Professional and partner self-registration
+
+The landing page carries a "Health professionals and partners" card with **Register** and **Sign in**. Registration
+(`#/register`) is a four-step wizard for doctors, nurses/midwives, pharmacies and wellbeing providers: role, details
+(licence number, issuer, expiry, facility, scope of practice, languages, service area), an optional licence document
+(photo or PDF, 2 MB) and the account (email + password). The record is created in state **pending**: listed in search
+with a "Verification pending" label, not requestable, shown with a banner on the professional's own dashboard. Two
+different administrators approve it in Admin → Verification (four eyes), where the licence document can be viewed.
+In cloud mode the account is a Supabase Auth user, the record carries `ownerUid`, and `supabase/registration.sql`
+adds the policies and a trigger so that nobody but staff can change a verification block and any owner edit of
+licence or identity fields sends the record back to pending.
+
 ## Demo-mode accounts (Menu → Professional and partner sign-in, only when `supabaseUrl` is empty)
 
 | Role | Account | Auth |
