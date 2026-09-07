@@ -175,8 +175,16 @@ create policy audit_no_delete on public.audit for delete using (false);
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('attachments', 'attachments', false, 2097152, array['image/jpeg','image/png','image/webp','application/pdf','audio/webm','audio/ogg','audio/mp4','audio/mpeg'])
 on conflict (id) do update set public = false, file_size_limit = 2097152;
+-- Uploads are shape-constrained (see patch-004-storage.sql): anonymous device
+-- users may only write patient case attachments "<caseId>/<fileId>"; licence
+-- documents under "verification/…" require an authenticated owner.
 drop policy if exists attachments_upload on storage.objects;
-create policy attachments_upload on storage.objects for insert to anon, authenticated with check (bucket_id = 'attachments');
+drop policy if exists attachments_upload_case on storage.objects;
+create policy attachments_upload_case on storage.objects for insert to anon, authenticated
+  with check (bucket_id = 'attachments' and name ~ '^(RQ|RX)-[A-Z0-9]{5,24}/AT-[A-Z0-9]{4,24}$');
+drop policy if exists attachments_upload_verification on storage.objects;
+create policy attachments_upload_verification on storage.objects for insert to authenticated
+  with check (bucket_id = 'attachments' and name ~ '^verification/[^/]{4,40}/[^/]{4,40}$');
 drop policy if exists attachments_read on storage.objects;
 create policy attachments_read on storage.objects for select to authenticated using (
   bucket_id = 'attachments' and exists (

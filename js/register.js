@@ -52,7 +52,7 @@ const REG = (() => {
     const send = $('#rgSend'); if (send) send.onclick = async () => {
       const email = $('#rg_email').value.trim().toLowerCase(), pw = $('#rg_password').value; d.email = email; d.consent = $('#rg_consent').checked;
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return err(t('reg_email') + ': ' + t('required'));
-      if (pw.length < 10 || /^(.)\1+$/.test(pw) || /^(1234567890|password|qwertyuiop|abcdefghij)/i.test(pw) || pw.toLowerCase().includes(email.split('@')[0].toLowerCase().slice(0, 6))) return err(t('reg_password_hint'));
+      if (pw.length < 10 || !/[a-zA-Z]/.test(pw) || !/[0-9]/.test(pw) || /^(.)\1+$/.test(pw) || /^(1234567890|password|qwertyuiop|abcdefghij)/i.test(pw) || pw.toLowerCase().includes(email.split('@')[0].toLowerCase().slice(0, 6))) return err(t('reg_password_hint'));
       if (!d.consent) return err(t('reg_consent').slice(0, 40) + '…: ' + t('required'));
       send.disabled = true; err('');
       try {
