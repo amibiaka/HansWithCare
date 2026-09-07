@@ -204,7 +204,9 @@ const DB = (() => {
   function getSession() { return session; }
   function flag(k) { const f = all('flags'); return f[k] !== false; }
   function setFlag(k, v) { const f = Object.assign({}, all('flags')); f[k] = v; setObj('flags', f); audit('flag', k, { result: String(v) }); }
-  function deviceToken() { let tk = null; try { tk = localStorage.getItem('hwc.device'); if (!tk) { tk = newId('DEV'); localStorage.setItem('hwc.device', tk); } } catch (e) { tk = 'DEV-VOLATILE'; } return tk; }
+  // Device token: 128-bit random, the only credential a patient has (RLS scopes their cases to it). Old short tokens are replaced.
+  function strongToken() { const a = new Uint8Array(16); (window.crypto || {}).getRandomValues ? crypto.getRandomValues(a) : a.forEach((_, i) => a[i] = Math.floor(Math.random() * 256)); return 'DEV-' + Array.from(a, b => b.toString(16).padStart(2, '0')).join(''); }
+  function deviceToken() { let tk = null; try { tk = localStorage.getItem('hwc.device'); if (!tk || !/^DEV-[0-9a-f]{32}$/.test(tk)) { tk = strongToken(); localStorage.setItem('hwc.device', tk); } } catch (e) { tk = tk || 'DEV-VOLATILE'; } return tk; }
   function notify(to, text, link) { put('notifications', { id: newId('NT'), to, text, link: link || '', at: nowIso(), read: false }); }
   function exportJSON() { const o = {}; COLS.forEach(c => o[c] = all(c)); o.exportedAt = nowIso(); o.seedVersion = SEED.version; return JSON.stringify(o, null, 2); }
   function toCSV(rows, cols) { const esc = v => { v = v === null || v === undefined ? '' : (typeof v === 'object' ? JSON.stringify(v) : String(v)); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }; cols = cols || Array.from(rows.reduce((s, r) => { Object.keys(r).forEach(k => s.add(k)); return s; }, new Set())); return [cols.join(',')].concat(rows.map(r => cols.map(c => esc(r[c])).join(','))).join('\n'); }

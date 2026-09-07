@@ -52,7 +52,7 @@ const srv = http.createServer((req, res) => { let p = decodeURIComponent(req.url
   await page.evaluate(() => DB.logout()); await go('#/register'); await page.click('[data-role="doctor"]'); await page.click('#rgNext');
   await page.fill('#rg_name', 'Dr. Test Registrant'); await page.fill('#rg_specialty', 'Dermatologist'); await page.fill('#rg_licenceNo', 'MD/TEST/1'); await page.fill('#rg_issuer', 'MOH HRL'); await page.fill('#rg_phone', '0911999999'); await page.check('[data-scope="general"]'); await page.check('[data-mode="secure_chat"]'); await page.click('#rgNext');
   await page.setInputFiles('#rg_doc', { name: 'licence.png', mimeType: 'image/png', buffer: fs.readFileSync(path.join(root, 'assets/icon-192.png')) }); await page.waitForTimeout(300); await page.click('#rgNext');
-  await page.fill('#rg_email', 'test.registrant@example.com'); await page.fill('#rg_password', 'Password-123'); await page.check('#rg_consent'); await page.click('#rgSend'); await page.waitForTimeout(400);
+  await page.fill('#rg_email', 'test.registrant@example.com'); await page.fill('#rg_password', 'Dehna-Trial-2026'); await page.check('#rg_consent'); await page.click('#rgSend'); await page.waitForTimeout(400);
   if (!(await page.textContent('#modal')).includes('Registration received')) errors.push('registration did not complete');
   const reg = await page.evaluate(() => DB.all('practitioners').find(p => p.name === 'Dr. Test Registrant')); if (!reg || reg.verification.state !== 'pending' || !reg.verification.documentId) errors.push('registered record missing or not pending');
   await go('#/pro'); if (!(await page.textContent('#main')).includes('Verification pending')) errors.push('pending banner missing on dashboard');
