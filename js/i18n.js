@@ -173,3 +173,16 @@ function initLang() {
   _lang = code || null; // null => first-entry language chooser
   if (_lang) setLang(_lang);
 }
+
+/* Set-password / reset (recovery & invite magic link) — appended keys */
+;(function () {
+  var SP = {
+    en: { sp_title: 'Set your password', sp_hint: 'Choose a password for your Dehna account. You are almost done.', sp_new: 'New password', sp_confirm: 'Confirm password', sp_save: 'Save and sign in', sp_mismatch: 'The two passwords do not match.', sp_no_link: 'This password link is missing or has expired. Ask an administrator to send a new invitation, or use "Forgot password" on the sign-in screen.' },
+    am: { sp_title: 'የይለፍ ቃልዎን ያዘጋጁ', sp_hint: 'ለደህና መለያዎ የይለፍ ቃል ይምረጡ። ሊጨርሱ ተቃርበዋል።', sp_new: 'አዲስ የይለፍ ቃል', sp_confirm: 'የይለፍ ቃል ያረጋግጡ', sp_save: 'አስቀምጥና ግባ', sp_mismatch: 'ሁለቱ የይለፍ ቃላት አይመሳሰሉም።', sp_no_link: 'ይህ የይለፍ ቃል አገናኝ የለም ወይም ጊዜው አልፎበታል። አስተዳዳሪ አዲስ ግብዣ እንዲልክ ይጠይቁ።' },
+    ti: { sp_title: 'መሕለፊ ቃልካ ኣዳሉ', sp_hint: 'ንመለለዪ ደህናኻ መሕለፊ ቃል ምረጽ። ክትውድእ ቀሪብካ ኣለኻ።', sp_new: 'ሓድሽ መሕለፊ ቃል', sp_confirm: 'መሕለፊ ቃል ኣረጋግጽ', sp_save: 'ኣቐምጥን እቶን', sp_mismatch: 'እቶም ክልተ መሕለፊ ቃላት ኣይሰማምዑን።', sp_no_link: 'እዚ መላግቦ መሕለፊ ቃል የለን ወይ ግዜኡ ሓሊፉ። ኣመሓዳሪ ሓድሽ ዕድመ ክሰድድ ሕተት።' },
+    om: { sp_title: 'Jecha darbii kee qopheessi', sp_hint: 'Herrega Dehna keetiif jecha darbii filadhu. Xumuruuf dhiyaatteerta.', sp_new: 'Jecha darbii haaraa', sp_confirm: 'Jecha darbii mirkaneessi', sp_save: 'Olkaa\'iitii seeni', sp_mismatch: 'Jechoonni darbii lamaan wal hin fakkaatan.', sp_no_link: 'Liinkiin jecha darbii kun hin jiru ykn yeroon isaa darbeera. Bulchaan afeerraa haaraa akka ergu gaafadhu.' },
+    so: { sp_title: 'Deji furahaaga sirta', sp_hint: 'Dooro furaha akoonkaaga Dehna. Waad ku dhowdahay dhammaystirka.', sp_new: 'Furaha cusub', sp_confirm: 'Xaqiiji furaha', sp_save: 'Kaydi oo gal', sp_mismatch: 'Labada fure isku mid ma aha.', sp_no_link: 'Linkigan furaha wuu maqan yahay ama wuu dhacay. Maamulaha ka codso inuu casuumaad cusub soo diro.' },
+    fr: { sp_title: 'Définir votre mot de passe', sp_hint: 'Choisissez un mot de passe pour votre compte Dehna. Vous y êtes presque.', sp_new: 'Nouveau mot de passe', sp_confirm: 'Confirmer le mot de passe', sp_save: 'Enregistrer et se connecter', sp_mismatch: 'Les deux mots de passe ne correspondent pas.', sp_no_link: 'Ce lien de mot de passe est manquant ou a expiré. Demandez à un administrateur d\'envoyer une nouvelle invitation.' }
+  };
+  if (typeof T !== 'undefined') { for (var l in SP) { if (T[l]) { for (var k in SP[l]) T[l][k] = SP[l][k]; } } }
+})();

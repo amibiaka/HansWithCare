@@ -62,6 +62,16 @@ const DB = (() => {
     },
     async insertProfile(p) { const r = await fetch(this.url + '/rest/v1/profiles', { method: 'POST', headers: await this.headers({ Prefer: 'return=minimal' }), body: JSON.stringify(p) }); if (!r.ok) { const txt = await r.text(); throw new Error('profile ' + r.status + ' ' + txt.slice(0, 160)); } },
     async signOut() { try { await fetch(this.url + '/auth/v1/logout', { method: 'POST', headers: await this.headers() }); } catch (e) {} this.auth = null; this.saveAuth(); },
+    // Set a password from a Supabase recovery/invite magic link, then return the login user with role.
+    async recover(tokens, newPassword) {
+      const at = tokens.access_token;
+      const r = await fetch(this.url + '/auth/v1/user', { method: 'PUT', headers: { apikey: this.key, 'Content-Type': 'application/json', Authorization: 'Bearer ' + at }, body: JSON.stringify({ password: newPassword }) });
+      const j = await r.json(); if (!r.ok) throw new Error(j.error_description || j.msg || j.message || j.error || 'update');
+      this.auth = { access_token: at, refresh_token: tokens.refresh_token || '', expires_at: tokens.expires_at, user: j }; this.saveAuth();
+      const p = await this.get('profiles', 'user_id=eq.' + j.id);
+      if (!p.length) { this.auth = null; this.saveAuth(); throw new Error('No profile for this account. Ask an administrator to assign a role.'); }
+      return { id: j.id, role: p[0].role, name: p[0].name, linked: p[0].linked || null, email: j.email };
+    },
     async get(table, query) { const out = []; let from = 0; for (;;) { const r = await fetch(this.url + '/rest/v1/' + table + '?' + (query || 'select=*'), { headers: await this.headers({ Range: from + '-' + (from + 999), 'Range-Unit': 'items' }) }); if (!r.ok) throw new Error(table + ' ' + r.status); const j = await r.json(); out.push.apply(out, j); if (j.length < 1000) break; from += 1000; } return out; },
     // Update-then-insert instead of ON CONFLICT upserts: PostgREST upserts run the INSERT policy even for existing
     // rows, which would block a doctor updating a patient's case. PATCH goes through the UPDATE policies only.
@@ -181,6 +191,7 @@ const DB = (() => {
 
   function login(user) { session = { id: user.id, role: user.role, name: user.name, linked: user.linked || null, email: user.email || null, at: nowIso() }; try { sessionStorage.setItem('hwc.session', JSON.stringify(session)); } catch (e) {} audit('login', user.id); emit('change'); }
   async function loginRemote(email, password) { const u = await Remote.signIn(email, password); login(u); Remote.lastSync = {}; sync(); return u; }
+  async function passwordRecover(tokens, newPassword) { const u = await Remote.recover(tokens, newPassword); login(u); Remote.lastSync = {}; sync(); return u; }
   function logout() { if (session) audit('logout', session.id); session = null; try { sessionStorage.removeItem('hwc.session'); } catch (e) {} if (Remote.enabled) { Remote.signOut(); ['cases','orders','notifications','consents','complaints','approvals','audit','guideLog','profiles'].forEach(c => { cache[c] = all(c).filter(x => x.device === deviceToken()); Local.save(c, cache[c]); }); Remote.lastSync = {}; } emit('change'); }
   // Self-registration of a professional or partner: account + pending record + profile, then signed in.
   async function register(o) {
@@ -213,5 +224,5 @@ const DB = (() => {
   function parseCSV(text) { const rows = []; let row = [], cell = '', q = false; for (let i = 0; i < text.length; i++) { const ch = text[i]; if (q) { if (ch === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += ch; } else if (ch === '"') q = true; else if (ch === ',') { row.push(cell); cell = ''; } else if (ch === '\n' || ch === '\r') { if (ch === '\r' && text[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; } else cell += ch; } if (cell || row.length) { row.push(cell); rows.push(row); } if (!rows.length) return []; const head = rows[0]; return rows.slice(1).filter(r => r.some(x => x !== '')).map(r => { const o = {}; head.forEach((h, i) => o[h] = r[i] !== undefined ? r[i] : ''); return o; }); }
   function reset() { Local.clear(); idb.clear(); try { sessionStorage.removeItem('hwc.session'); localStorage.removeItem('hwc.outbox'); localStorage.removeItem('hwc.lastSync'); } catch (e) {} location.reload(); }
 
-  return { init, sync, all, get, put, remove, setObj, newId, nowIso, audit, login, loginRemote, register, logout, session: getSession, flag, setFlag, deviceToken, notify, exportJSON, toCSV, parseCSV, reset, files: idb, on: fn => listeners.push(fn), clone, hash, remote: Remote };
+  return { init, sync, all, get, put, remove, setObj, newId, nowIso, audit, login, loginRemote, passwordRecover, register, logout, session: getSession, flag, setFlag, deviceToken, notify, exportJSON, toCSV, parseCSV, reset, files: idb, on: fn => listeners.push(fn), clone, hash, remote: Remote };
 })();

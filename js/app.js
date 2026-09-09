@@ -2,6 +2,29 @@
 const APP = (() => {
   const { $, $$, esc } = UI;
   let deferredInstall = null;
+  let pendingRecover = null;
+  function authHashTokens() {
+    const h = (location.hash || '').replace(/^#/, '');
+    if (!/(^|&)access_token=/.test(h) || !/type=(recovery|invite)/.test(h)) return null;
+    try { const p = new URLSearchParams(h); const at = p.get('access_token'); if (!at) return null;
+      const exp = p.get('expires_at') ? parseInt(p.get('expires_at'), 10) : (Math.floor(Date.now() / 1000) + parseInt(p.get('expires_in') || '3600', 10));
+      return { access_token: at, refresh_token: p.get('refresh_token') || '', expires_at: exp, type: p.get('type') };
+    } catch (e) { return null; }
+  }
+  function setPasswordView() {
+    if (!pendingRecover) { UI.render('<div class="alert red">' + esc(t('sp_no_link')) + '</div><a class="btn" href="#/pro/signin">' + esc(t('pro_signin')) + '</a>', { title: t('sp_title') }); return; }
+    const rc = pendingRecover;
+    UI.render('<h1>' + esc(t('sp_title')) + '</h1><p class="small muted">' + esc(t('sp_hint')) + '</p><div class="card"><label class="f">' + esc(t('sp_new')) + '<input type="password" id="sp1" autocomplete="new-password"></label><label class="f">' + esc(t('sp_confirm')) + '<input type="password" id="sp2" autocomplete="new-password"></label><p class="hint">' + esc(t('reg_password_hint')) + '</p><button class="btn primary block" id="spGo">' + esc(t('sp_save')) + '</button><p class="err" id="spErr"></p></div>', { title: t('sp_title') });
+    const go = async () => {
+      const p1 = $('#sp1').value, p2 = $('#sp2').value, err = $('#spErr');
+      if (p1.length < 10 || !/[a-zA-Z]/.test(p1) || !/[0-9]/.test(p1)) { err.textContent = t('reg_password_hint'); return; }
+      if (p1 !== p2) { err.textContent = t('sp_mismatch'); return; }
+      const b = $('#spGo'); b.disabled = true; err.textContent = '';
+      try { const u = await DB.passwordRecover(rc, p1); pendingRecover = null; try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} UI.go(['admin','verifier','safety','privacy','finance'].includes(u.role) ? '#/admin' : '#/pro'); }
+      catch (e) { err.textContent = e.message; b.disabled = false; }
+    };
+    $('#spGo').onclick = go;
+  }
 
   const ROUTES = [
     [/^\/?$/, () => getLang() ? PATIENT.home() : PATIENT.langChooser()],
@@ -30,13 +53,14 @@ const APP = (() => {
     [/^\/pro$/, () => PRO.dashboard()],
     [/^\/pro\/case\/([\w-]+)$/, m => PRO.proCase(m[1])],
     [/^\/pro\/order\/([\w-]+)$/, m => PRO.proOrder(m[1])],
-    [/^\/admin$/, () => ADMIN.view()]
+    [/^\/admin$/, () => ADMIN.view()],
+    [/^\/set-password$/, () => setPasswordView()]
   ];
   function route() {
     const hash = location.hash.replace(/^#/, '') || '/';
     const path = hash.split('?')[0];
     UI.closeModal();
-    if (!getLang() && path !== '/lang') { PATIENT.langChooser(); return; }
+    if (!getLang() && path !== '/lang' && path !== '/set-password') { PATIENT.langChooser(); return; }
     for (const r of ROUTES) { const m = path.match(r[0]); if (m) { try { r[1](m); } catch (e) { console.error(e); UI.render('<div class="alert red">Error: ' + esc(e.message) + '</div><a class="btn" href="#/">' + esc(t('nav_home')) + '</a>'); } nav(path); return; } }
     UI.go('#/');
   }
@@ -74,6 +98,8 @@ const APP = (() => {
     window.addEventListener('storage', e => { if (e.key && e.key.startsWith('hwc.') && e.key !== 'hwc.lang') { DB.init(); route(); } });
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { navigator.serviceWorker.register('sw.js').catch(e => console.warn('sw', e)); }
     CASES.syncQueued();
+    const rc = authHashTokens();
+    if (rc) { pendingRecover = rc; if (!getLang()) setLang('en'); try { history.replaceState(null, '', location.pathname + location.search + '#/set-password'); } catch (e) { location.hash = '#/set-password'; } }
     route();
   }
   document.addEventListener('DOMContentLoaded', init);
