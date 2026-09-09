@@ -186,3 +186,16 @@ function initLang() {
   };
   if (typeof T !== 'undefined') { for (var l in SP) { if (T[l]) { for (var k in SP[l]) T[l][k] = SP[l][k]; } } }
 })();
+
+/* forgot / reset password keys */
+;(function () {
+  var SP = {
+    en: { sp_forgot_title: "Set or reset your password", sp_forgot_hint: "Enter your email and we will send a secure link to set your password. The link is valid for one hour.", sp_send_link: "Send me the link", sp_sent: "Done. Check your email (and spam) and open the link within the hour.", sp_link_expired: "That link has expired or was already used. Request a new one below.", sp_forgot_link: "Forgot or set your password" },
+    am: { sp_forgot_title: "የይለፍ ቃልዎን ያዘጋጁ ወይም ዳግም ያስጀምሩ", sp_forgot_hint: "ኢሜይልዎን ያስገቡ፤ የይለፍ ቃል ለማዘጋጀት ደህንነቱ የተጠበቀ አገናኝ እንልካለን። አገናኙ ለአንድ ሰዓት ይሰራል።", sp_send_link: "አገናኝ ላክልኝ", sp_sent: "ተከናውኗል። ኢሜይልዎን (እና ስፓም) ይመልከቱ፤ በአንድ ሰዓት ውስጥ አገናኙን ይክፈቱ።", sp_link_expired: "ይህ አገናኝ ጊዜው አልፎበታል ወይም አስቀድሞ ጥቅም ላይ ውሏል። ከታች አዲስ ይጠይቁ።", sp_forgot_link: "የይለፍ ቃል ረሱ ወይም ያዘጋጁ" },
+    ti: { sp_forgot_title: "መሕለፊ ቃልካ ኣዳሉ ወይ ዳግም ኣቐምጥ", sp_forgot_hint: "ኢመይልካ ኣእቱ፤ መሕለፊ ቃል ንምድላው ውሑስ መላግቦ ክንሰደልካ ኢና። እቲ መላግቦ ንሓደ ሰዓት ይሰርሕ።", sp_send_link: "መላግቦ ስደለይ", sp_sent: "ተወዲኡ። ኢመይልካ (ከምኡውን ስፓም) ርአ፤ ኣብ ውሽጢ ሓደ ሰዓት ክፈቶ።", sp_link_expired: "እዚ መላግቦ ግዜኡ ሓሊፉ ወይ ተጠቒሙ። ኣብ ታሕቲ ሓድሽ ሕተት።", sp_forgot_link: "መሕለፊ ቃል ረሲዕካ ወይ ኣዳሉ" },
+    om: { sp_forgot_title: "Jecha darbii kee qopheessi ykn haaromsi", sp_forgot_hint: "Imeelii kee galchi; jecha darbii qopheessuuf liinkii nagaa siif ergina. Liinkichi sa`aatii tokkoof hojjeta.", sp_send_link: "Liinkii naaf ergi", sp_sent: "Xumurameera. Imeelii kee (fi spam) ilaali; sa`aatii tokko keessatti bani.", sp_link_expired: "Liinkiin kun yeroon isaa darbeera ykn duraan itti fayyadamameera. Gadiitti haaraa gaafadhu.", sp_forgot_link: "Jecha darbii dagatte ykn qopheessi" },
+    so: { sp_forgot_title: "Deji ama dib u deji furahaaga sirta", sp_forgot_hint: "Geli iimaylkaaga; waxaan kuu soo diri doonnaa link ammaan ah si aad u dejiso furahaaga. Linkigu wuxuu shaqeeyaa hal saac.", sp_send_link: "Ii soo dir linkiga", sp_sent: "Waa dhammaatay. Hubi iimaylkaaga (iyo spam-ka), fur linkiga hal saac gudahood.", sp_link_expired: "Linkigan wuu dhacay ama horey ayaa loo isticmaalay. Mid cusub ka codso hoosta.", sp_forgot_link: "Furaha aad ilowday ama aad dejin" },
+    fr: { sp_forgot_title: "Definir ou reinitialiser votre mot de passe", sp_forgot_hint: "Saisissez votre email, nous vous enverrons un lien securise pour definir votre mot de passe. Le lien est valable une heure.", sp_send_link: "Envoyez-moi le lien", sp_sent: "C est fait. Verifiez votre email (et les spams) et ouvrez le lien dans l heure.", sp_link_expired: "Ce lien a expire ou a deja ete utilise. Demandez-en un nouveau ci-dessous.", sp_forgot_link: "Mot de passe oublie ou a definir" }
+  };
+  if (typeof T !== "undefined") { for (var l in SP) { if (T[l]) { for (var k in SP[l]) T[l][k] = SP[l][k]; } } }
+})();

@@ -72,6 +72,11 @@ const DB = (() => {
       if (!p.length) { this.auth = null; this.saveAuth(); throw new Error('No profile for this account. Ask an administrator to assign a role.'); }
       return { id: j.id, role: p[0].role, name: p[0].name, linked: p[0].linked || null, email: j.email };
     },
+    async sendRecovery(email) {
+      const r = await fetch(this.url + '/auth/v1/recover', { method: 'POST', headers: { apikey: this.key, 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email }) });
+      if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error(j.error_description || j.msg || j.message || ('recover ' + r.status)); }
+      return true;
+    },
     async get(table, query) { const out = []; let from = 0; for (;;) { const r = await fetch(this.url + '/rest/v1/' + table + '?' + (query || 'select=*'), { headers: await this.headers({ Range: from + '-' + (from + 999), 'Range-Unit': 'items' }) }); if (!r.ok) throw new Error(table + ' ' + r.status); const j = await r.json(); out.push.apply(out, j); if (j.length < 1000) break; from += 1000; } return out; },
     // Update-then-insert instead of ON CONFLICT upserts: PostgREST upserts run the INSERT policy even for existing
     // rows, which would block a doctor updating a patient's case. PATCH goes through the UPDATE policies only.

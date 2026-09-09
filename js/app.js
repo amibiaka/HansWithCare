@@ -3,6 +3,7 @@ const APP = (() => {
   const { $, $$, esc } = UI;
   let deferredInstall = null;
   let pendingRecover = null;
+  let pendingRecoverError = false;
   function authHashTokens() {
     const h = (location.hash || '').replace(/^#/, '');
     if (!/(^|&)access_token=/.test(h) || !/type=(recovery|invite)/.test(h)) return null;
@@ -11,8 +12,20 @@ const APP = (() => {
       return { access_token: at, refresh_token: p.get('refresh_token') || '', expires_at: exp, type: p.get('type') };
     } catch (e) { return null; }
   }
+  function forgotPasswordView() {
+    UI.render((pendingRecoverError ? '<div class="alert red">' + esc(t('sp_link_expired')) + '</div>' : '') + '<h1>' + esc(t('sp_forgot_title')) + '</h1><p class="small muted">' + esc(t('sp_forgot_hint')) + '</p><div class="card"><label class="f">' + esc(t('reg_email')) + '<input type="email" id="fpEmail" autocomplete="username" inputmode="email"></label><button class="btn primary block" id="fpGo">' + esc(t('sp_send_link')) + '</button><p class="hint" id="fpMsg"></p></div><a class="btn ghost block" href="#/pro/signin">' + esc(t('pro_signin')) + '</a>', { title: t('sp_forgot_title'), back: true });
+    pendingRecoverError = false;
+    const go = async () => {
+      const email = $('#fpEmail').value.trim(), msg = $('#fpMsg');
+      if (!(email.includes('@') && email.lastIndexOf('.') > email.indexOf('@'))) { msg.className = 'err'; msg.textContent = t('reg_email') + ': ' + t('required'); return; }
+      const b = $('#fpGo'); b.disabled = true; msg.className = 'hint'; msg.textContent = '';
+      try { await DB.remote.sendRecovery(email); msg.textContent = t('sp_sent'); }
+      catch (e) { b.disabled = false; msg.className = 'err'; msg.textContent = e.message; }
+    };
+    $('#fpGo').onclick = go;
+  }
   function setPasswordView() {
-    if (!pendingRecover) { UI.render('<div class="alert red">' + esc(t('sp_no_link')) + '</div><a class="btn" href="#/pro/signin">' + esc(t('pro_signin')) + '</a>', { title: t('sp_title') }); return; }
+    if (!pendingRecover) { return forgotPasswordView(); }
     const rc = pendingRecover;
     UI.render('<h1>' + esc(t('sp_title')) + '</h1><p class="small muted">' + esc(t('sp_hint')) + '</p><div class="card"><label class="f">' + esc(t('sp_new')) + '<input type="password" id="sp1" autocomplete="new-password"></label><label class="f">' + esc(t('sp_confirm')) + '<input type="password" id="sp2" autocomplete="new-password"></label><p class="hint">' + esc(t('reg_password_hint')) + '</p><button class="btn primary block" id="spGo">' + esc(t('sp_save')) + '</button><p class="err" id="spErr"></p></div>', { title: t('sp_title') });
     const go = async () => {
@@ -100,6 +113,7 @@ const APP = (() => {
     CASES.syncQueued();
     const rc = authHashTokens();
     if (rc) { pendingRecover = rc; if (!getLang()) setLang('en'); try { history.replaceState(null, '', location.pathname + location.search + '#/set-password'); } catch (e) { location.hash = '#/set-password'; } }
+    else if (/[#&]error=/.test(location.hash)) { pendingRecoverError = true; if (!getLang()) setLang('en'); try { history.replaceState(null, '', location.pathname + location.search + '#/set-password'); } catch (e) { location.hash = '#/set-password'; } }
     route();
   }
   document.addEventListener('DOMContentLoaded', init);
