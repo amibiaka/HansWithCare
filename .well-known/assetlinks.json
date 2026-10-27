@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.hanswithcare.dehna",
+    "sha256_cert_fingerprints": ["D6:22:D5:52:79:87:68:1B:40:E9:F8:0B:20:60:DC:84:30:B2:2A:F9:44:68:4B:E3:43:EF:77:68:75:9D:8B:D2"]
+  }
+}]

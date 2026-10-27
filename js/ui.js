@@ -41,7 +41,7 @@ const UI = (() => {
     const cls = /completed|delivered|paid|accepted|confirmed/.test(state) ? 'b-green' : /cancel|expired|closed|refunded|disputed/.test(state) ? 'b-grey' : /queued|clarif|pending/.test(state) ? 'b-amber' : 'b-blue';
     return '<span class="badge ' + cls + '">' + esc(t(key)) + '</span>';
   }
-  function stockBadge(s) { const map = { available: 'b-green', limited: 'b-amber', unavailable: 'b-red', expected: 'b-blue', requires_confirmation: 'b-amber', not_stocked: 'b-grey' }; return '<span class="badge ' + (map[s] || 'b-grey') + '">' + esc(t('stock_' + { requires_confirmation: 'confirm', not_stocked: 'not' }[s] || s)) + '</span>'; }
+  function stockBadge(s) { if (!s) return ''; const map = { available: 'b-green', limited: 'b-amber', unavailable: 'b-red', expected: 'b-blue', requires_confirmation: 'b-amber', not_stocked: 'b-grey' }; return '<span class="badge ' + (map[s] || 'b-grey') + '">' + esc(t('stock_' + { requires_confirmation: 'confirm', not_stocked: 'not' }[s] || s)) + '</span>'; }
   function langNames(codes) { return (codes || []).map(c => { const l = LANGS.find(x => x.code === c); return l ? l.native : c; }).join(', '); }
   function telHref(n) { return 'tel:' + String(n || '').replace(/[^+\d]/g, ''); }
 

@@ -199,3 +199,5 @@ function initLang() {
   };
   if (typeof T !== "undefined") { for (var l in SP) { if (T[l]) { for (var k in SP[l]) T[l][k] = SP[l][k]; } } }
 })();
+
+(function(){ var AN = {"en": {"menu_android": "Get the Android app", "menu_android_sub": "Direct download (APK, 1.5 MB). Google Play listing coming soon."}, "am": {"menu_android": "የአንድሮይድ መተግበሪያውን ያውርዱ", "menu_android_sub": "ቀጥታ ማውረድ (APK፣ 1.5 ሜባ)። በጉግል ፕሌይ በቅርቡ።"}, "ti": {"menu_android": "መተግበሪ ኣንድሮይድ ኣውርድ", "menu_android_sub": "ቀጥታ ምውራድ (APK፣ 1.5 ሜባ)። ኣብ ጉግል ፕለይ ኣብ ቀረባ።"}, "om": {"menu_android": "Appii Android buufadhu", "menu_android_sub": "Buufannaa kallattii (APK, 1.5 MB). Google Play irratti dhiyootti."}, "so": {"menu_android": "Soo deji abka Android", "menu_android_sub": "Soo dejin toos ah (APK, 1.5 MB). Google Play dhowaan."}, "fr": {"menu_android": "Telecharger l'application Android", "menu_android_sub": "Telechargement direct (APK, 1,5 Mo). Bientot sur Google Play."}}; if (typeof T !== "undefined") { for (var l in AN) { if (T[l]) { for (var k in AN[l]) T[l][k] = AN[l][k]; } } } })();
